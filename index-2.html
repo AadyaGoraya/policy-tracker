@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Policy Tracker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+    :root {
+      --bg: #f5f3ee;
+      --surface: #ffffff;
+      --surface2: #eceae3;
+      --border: #ddd9ce;
+      --ink: #1a1916;
+      --ink2: #5a5850;
+      --ink3: #9a968e;
+      --eu: #2356d4;
+      --eu-bg: #eef2fd;
+      --us: #c23b2e;
+      --us-bg: #fdeeed;
+      --uk: #1a6b3a;
+      --uk-bg: #eaf5ee;
+      --cn: #c47a1e;
+      --cn-bg: #fdf4e7;
+      --un: #6b4bc4;
+      --un-bg: #f2eefe;
+      --tag-bg: #e8e6df;
+      --accent: #2356d4;
+      --display: 'Syne', sans-serif;
+      --body: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: var(--ink);
+      color: #fff;
+      padding: 0 48px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .header-top h1 {
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .header-top h1 span { color: #7c9fff; }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      font-family: var(--body);
+    }
+
+    .live-dot {
+      width: 6px; height: 6px;
+      background: #4ecca3;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 40px;
+      padding: 18px 0;
+    }
+
+    .hstat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .hstat-num {
+      font-family: var(--display);
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .hstat-lbl {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Controls */
+    .controls {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px 9px 36px;
+      font-family: var(--body);
+      font-size: 14px;
+      color: var(--ink);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--ink3); }
+
+    .search-icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink3);
+      font-size: 14px;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 7px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all 0.15s;
+      background: var(--tag-bg);
+      color: var(--ink2);
+    }
+
+    .pill:hover { border-color: var(--border); color: var(--ink); }
+    .pill.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .pill.eu.active { background: var(--eu); color: #fff; border-color: var(--eu); }
+    .pill.us.active { background: var(--us); color: #fff; border-color: var(--us); }
+    .pill.uk.active { background: var(--uk); color: #fff; border-color: var(--uk); }
+    .pill.cn.active { background: var(--cn); color: #fff; border-color: var(--cn); }
+    .pill.un.active { background: var(--un); color: #fff; border-color: var(--un); }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 0;
+      min-height: calc(100vh - 180px);
+    }
+
+    /* Policy list */
+    .policy-list {
+      padding: 24px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .list-header h2 {
+      font-family: var(--display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .count-badge {
+      font-size: 12px;
+      color: var(--ink3);
+    }
+
+    /* Policy card */
+    .policy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px 24px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .policy-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); border-color: #ccc; }
+    .policy-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(35,86,212,0.08); }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .jurisdiction-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .jb-eu { background: var(--eu-bg); color: var(--eu); }
+    .jb-us { background: var(--us-bg); color: var(--us); }
+    .jb-uk { background: var(--uk-bg); color: var(--uk); }
+    .jb-cn { background: var(--cn-bg); color: var(--cn); }
+    .jb-un { background: var(--un-bg); color: var(--un); }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    .status-dot.enacted { background: #4ecca3; }
+    .status-dot.proposed { background: #f7c34a; }
+    .status-dot.draft { background: #aaa; }
+    .status-dot.withdrawn { background: #f7566a; }
+
+    .card-title {
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.3;
+      flex: 1;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .card-date {
+      font-size: 12px;
+      color: var(--ink3);
+    }
+
+    .card-summary {
+      font-size: 13px;
+      color: var(--ink2);
+      line-height: 1.65;
+    }
+
+    .card-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .tag {
+      background: var(--tag-bg);
+      color: var(--ink2);
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+
+    .accel-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 12px 0 0 12px;
+    }
+
+    /* Timeline sidebar */
+    .sidebar {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 24px 28px;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+      height: calc(100vh - 130px);
+    }
+
+    .sidebar h2 {
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 20px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px; top: 0; bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -17px;
+      top: 5px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      border: 2px solid var(--surface);
+    }
+
+    .tl-date {
+      font-family: var(--body);
+      font-size: 10px;
+      color: var(--ink3);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .tl-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.3;
+      margin-bottom: 3px;
+    }
+
+    .tl-jur {
+      font-size: 11px;
+      color: var(--ink3);
+    }
+
+    /* Coverage matrix */
+    .matrix {
+      margin-top: 28px;
+    }
+
+    .matrix h2 {
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
+    .matrix-grid {
+      display: grid;
+      gap: 6px;
+    }
+
+    .matrix-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .matrix-label {
+      font-size: 11px;
+      color: var(--ink2);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .matrix-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .matrix-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+
+    .matrix-count {
+      font-size: 11px;
+      color: var(--ink3);
+      width: 16px;
+      text-align: right;
+    }
+
+    .no-results {
+      text-align: center;
+      color: var(--ink3);
+      padding: 40px 0;
+      font-size: 14px;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; border-left: none; border-top: 1px solid var(--border); }
+      header { padding: 0 20px; }
+      .controls { padding: 12px 20px; }
+      .policy-list { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <h1>AI Policy <span>Tracker</span></h1>
+    <div class="live-badge"><div class="live-dot"></div> Updated June 2025</div>
+  </div>
+  <div class="header-stats" id="headerStats"></div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="searchInput" placeholder="Search policies, laws, frameworks…" oninput="filterPolicies()"/>
+  </div>
+  <div class="filter-pills">
+    <div class="pill active" onclick="setFilter('all', this)">All</div>
+    <div class="pill eu" onclick="setFilter('EU', this)">🇪🇺 EU</div>
+    <div class="pill us" onclick="setFilter('US', this)">🇺🇸 US</div>
+    <div class="pill uk" onclick="setFilter('UK', this)">🇬🇧 UK</div>
+    <div class="pill cn" onclick="setFilter('CN', this)">🇨🇳 China</div>
+    <div class="pill un" onclick="setFilter('UN', this)">🌐 Global</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="policy-list">
+    <div class="list-header">
+      <h2>Policy Instruments</h2>
+      <span class="count-badge" id="countBadge"></span>
+    </div>
+    <div id="policyContainer"></div>
+  </div>
+
+  <div class="sidebar">
+    <h2>Chronological Timeline</h2>
+    <div class="timeline" id="timeline"></div>
+    <div class="matrix" id="matrixSection">
+      <h2>Coverage by Jurisdiction</h2>
+      <div class="matrix-grid" id="matrixGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const policies = [
+  {
+    id: 1,
+    jurisdiction: 'EU',
+    title: 'EU AI Act',
+    date: '2024-08-01',
+    dateLabel: 'Aug 2024',
+    status: 'enacted',
+    summary: 'The world\'s first comprehensive legal framework for AI. Establishes a risk-based classification system with four tiers: unacceptable risk (banned), high-risk, limited risk, and minimal risk. Requires conformity assessments, transparency disclosures, and human oversight for high-risk applications. Sets global precedent for AI regulation.',
+    tags: ['Risk Classification', 'Mandatory Compliance', 'High-Risk AI', 'Transparency', 'Human Oversight'],
+    link: 'https://artificialintelligenceact.eu/'
+  },
+  {
+    id: 2,
+    jurisdiction: 'US',
+    title: 'Executive Order on Safe, Secure, and Trustworthy AI',
+    date: '2023-10-30',
+    dateLabel: 'Oct 2023',
+    status: 'enacted',
+    summary: 'Biden-era executive order directing federal agencies to develop AI safety standards, requiring developers of powerful models to share safety test results with the government, and establishing red-team evaluations for dual-use foundation models above compute thresholds.',
+    tags: ['Safety Testing', 'Red-Teaming', 'Compute Thresholds', 'Federal Standards', 'Dual-Use'],
+    link: 'https://www.whitehouse.gov/briefing-room/presidential-actions/2023/10/30/executive-order-on-the-safe-secure-and-trustworthy-development-and-use-of-artificial-intelligence/'
+  },
+  {
+    id: 3,
+    jurisdiction: 'UK',
+    title: 'UK AI Safety Summit — Bletchley Declaration',
+    date: '2023-11-01',
+    dateLabel: 'Nov 2023',
+    status: 'enacted',
+    summary: 'International declaration signed by 28 countries at Bletchley Park acknowledging frontier AI risks and committing to collaborative safety research. Led to establishment of the UK AI Safety Institute for pre-deployment model evaluations.',
+    tags: ['International', 'Frontier AI', 'Safety Evaluations', 'Pre-Deployment', 'Multi-lateral'],
+    link: 'https://www.gov.uk/government/publications/ai-safety-summit-2023-the-bletchley-declaration'
+  },
+  {
+    id: 4,
+    jurisdiction: 'CN',
+    title: 'Interim Measures for Generative AI Services',
+    date: '2023-08-15',
+    dateLabel: 'Aug 2023',
+    status: 'enacted',
+    summary: 'China\'s regulatory framework for generative AI requiring security assessments before public launch, content filtering aligned with socialist values, user identity verification, and watermarking of AI-generated content. Applies to all generative AI services available in China.',
+    tags: ['Generative AI', 'Content Moderation', 'Watermarking', 'Identity Verification', 'Security Assessment'],
+    link: 'https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm'
+  },
+  {
+    id: 5,
+    jurisdiction: 'US',
+    title: 'NIST AI Risk Management Framework (AI RMF 1.0)',
+    date: '2023-01-26',
+    dateLabel: 'Jan 2023',
+    status: 'enacted',
+    summary: 'Voluntary framework from the National Institute of Standards and Technology providing organizations with structured guidance to identify, assess, and manage AI risks. Organizes AI risk management into four core functions: Govern, Map, Measure, and Manage.',
+    tags: ['Risk Management', 'Voluntary', 'Standards', 'NIST', 'Governance Framework'],
+    link: 'https://airc.nist.gov/Home'
+  },
+  {
+    id: 6,
+    jurisdiction: 'UN',
+    title: 'UN General Assembly Resolution on AI',
+    date: '2024-03-21',
+    dateLabel: 'Mar 2024',
+    status: 'enacted',
+    summary: 'First UN General Assembly resolution specifically focused on AI, passed with consensus of 193 member states. Calls for "safe, secure, and trustworthy" AI systems and emphasizes that AI governance must respect international human rights law. Non-binding but significant political signal.',
+    tags: ['Human Rights', 'Global Governance', 'Non-Binding', 'Consensus', 'International Law'],
+    link: 'https://press.un.org/en/2024/ga12620.doc.htm'
+  },
+  {
+    id: 7,
+    jurisdiction: 'EU',
+    title: 'General-Purpose AI Code of Practice',
+    date: '2024-11-14',
+    dateLabel: 'Nov 2024',
+    status: 'proposed',
+    summary: 'Draft industry code under the EU AI Act specifically targeting general-purpose AI model providers. Covers transparency obligations, copyright compliance, systemic risk assessment, and incident reporting for models above 10²⁵ FLOPs compute threshold.',
+    tags: ['GPAI', 'Systemic Risk', 'Copyright', 'Incident Reporting', 'Foundation Models'],
+    link: 'https://digital-strategy.ec.europa.eu/en/policies/ai-act'
+  },
+  {
+    id: 8,
+    jurisdiction: 'UK',
+    title: 'Frontier AI Taskforce — AISI Evaluations Programme',
+    date: '2024-02-01',
+    dateLabel: 'Feb 2024',
+    status: 'enacted',
+    summary: 'UK AI Safety Institute formal evaluations programme conducting pre-deployment safety assessments of frontier models from Anthropic, Google DeepMind, Meta, Microsoft, and OpenAI. Focuses on uplift potential for CBRN threats and autonomous capabilities.',
+    tags: ['Pre-Deployment', 'CBRN', 'Autonomous AI', 'Safety Evaluations', 'Frontier Models'],
+    link: 'https://www.gov.uk/government/organisations/ai-safety-institute'
+  },
+  {
+    id: 9,
+    jurisdiction: 'US',
+    title: 'California SB 1047 — Safe and Secure Innovation for Frontier AI',
+    date: '2024-09-29',
+    dateLabel: 'Sep 2024',
+    status: 'withdrawn',
+    summary: 'California bill proposing mandatory safety testing for AI models above $100M training cost. Would have required developers to implement kill-switches and safe operation procedures. Vetoed by Governor Newsom citing concerns over innovation chilling effects, but reignited state-level AI regulation debate.',
+    tags: ['State Legislation', 'Kill-Switch', 'Training Cost', 'Vetoed', 'California'],
+    link: 'https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202320240SB1047'
+  },
+  {
+    id: 10,
+    jurisdiction: 'UN',
+    title: 'IAEA-Style AI Governance Proposal',
+    date: '2024-06-01',
+    dateLabel: 'Jun 2024',
+    status: 'draft',
+    summary: 'Emerging proposal from multiple stakeholders including Yoshua Bengio and policy researchers for an international AI agency modeled on the IAEA. Would monitor compute thresholds, conduct inspections of frontier AI labs, and create binding international norms for catastrophic-risk AI development.',
+    tags: ['International Agency', 'Compute Monitoring', 'Catastrophic Risk', 'Inspections', 'Frontier Labs'],
+    link: 'https://www.iaea.org/'
+  },
+  {
+    id: 11,
+    jurisdiction: 'CN',
+    title: 'Algorithm Recommendation Regulations',
+    date: '2022-03-01',
+    dateLabel: 'Mar 2022',
+    status: 'enacted',
+    summary: 'China\'s early regulation of algorithmic systems used in content recommendation, requiring transparency about recommendation logic, user opt-out mechanisms, and prohibiting use of algorithms to manipulate pricing based on user profiling. First major country to regulate recommendation algorithms.',
+    tags: ['Algorithmic Transparency', 'Content Recommendation', 'Consumer Rights', 'Pricing', 'First-Mover'],
+    link: 'https://www.cac.gov.cn/'
+  },
+  {
+    id: 12,
+    jurisdiction: 'EU',
+    title: 'AI Liability Directive (Proposed)',
+    date: '2022-09-28',
+    dateLabel: 'Sep 2022',
+    status: 'proposed',
+    summary: 'Proposed EU directive to adapt civil liability rules for AI systems, making it easier for victims to claim damages caused by AI. Introduces a rebuttable presumption of causality when providers fail to disclose information about their AI systems, and harmonizes rules across member states.',
+    tags: ['Civil Liability', 'Damages', 'Causality', 'Harmonization', 'Victims Rights'],
+    link: 'https://ec.europa.eu/info/business-economy-euro/doing-business-eu/contract-rules/digital-contracts/liability-rules-artificial-intelligence_en'
+  }
+];
+
+const jurColors = { EU: '#2356d4', US: '#c23b2e', UK: '#1a6b3a', CN: '#c47a1e', UN: '#6b4bc4' };
+const jurFlags = { EU: '🇪🇺', US: '🇺🇸', UK: '🇬🇧', CN: '🇨🇳', UN: '🌐' };
+
+let activeFilter = 'all';
+let selectedId = null;
+
+function setFilter(jur, el) {
+  activeFilter = jur;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  filterPolicies();
+}
+
+function filterPolicies() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = policies.filter(p => {
+    const matchJur = activeFilter === 'all' || p.jurisdiction === activeFilter;
+    const matchSearch = !query ||
+      p.title.toLowerCase().includes(query) ||
+      p.summary.toLowerCase().includes(query) ||
+      p.tags.some(t => t.toLowerCase().includes(query));
+    return matchJur && matchSearch;
+  });
+  renderCards(filtered);
+  document.getElementById('countBadge').textContent = `${filtered.length} instrument${filtered.length !== 1 ? 's' : ''}`;
+}
+
+function renderCards(list) {
+  const container = document.getElementById('policyContainer');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="no-results">No policies match your filters.</div>';
+    return;
+  }
+
+  const sorted = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  container.innerHTML = sorted.map(p => `
+    <div class="policy-card ${selectedId === p.id ? 'selected' : ''}" onclick="selectCard(${p.id})">
+      <div class="accel-bar" style="background: ${jurColors[p.jurisdiction]}"></div>
+      <div class="card-top">
+        <div>
+          <div class="card-meta">
+            <span class="jurisdiction-badge jb-${p.jurisdiction.toLowerCase()}">${jurFlags[p.jurisdiction]} ${p.jurisdiction}</span>
+            <span class="card-date">${p.dateLabel}</span>
+            <span class="status-dot ${p.status}" title="${p.status}"></span>
+            <span style="font-size:11px;color:var(--ink3);text-transform:capitalize">${p.status}</span>
+          </div>
+          <div class="card-title">${p.title}</div>
+        </div>
+      </div>
+      <div class="card-summary">${p.summary}</div>
+      <div class="card-tags">${p.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      ${p.link ? `<div style="margin-top:12px"><a href="${p.link}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;font-weight:500;">View Source →</a></div>` : ''}
+    </div>
+  `).join('');
+}
+
+function selectCard(id) {
+  selectedId = selectedId === id ? null : id;
+  filterPolicies();
+}
+
+function renderTimeline() {
+  const sorted = [...policies].sort((a, b) => new Date(b.date) - new Date(a.date));
+  document.getElementById('timeline').innerHTML = sorted.map(p => `
+    <div class="timeline-item">
+      <div class="timeline-dot" style="background: ${jurColors[p.jurisdiction]}"></div>
+      <div class="tl-date">${p.dateLabel}</div>
+      <div class="tl-name">${p.title}</div>
+      <div class="tl-jur">${jurFlags[p.jurisdiction]} ${p.jurisdiction} · <span style="text-transform:capitalize">${p.status}</span></div>
+    </div>
+  `).join('');
+}
+
+function renderMatrix() {
+  const counts = {};
+  for (const p of policies) {
+    counts[p.jurisdiction] = (counts[p.jurisdiction] || 0) + 1;
+  }
+  const max = Math.max(...Object.values(counts));
+
+  document.getElementById('matrixGrid').innerHTML = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([jur, count]) => `
+      <div class="matrix-row">
+        <div class="matrix-label">${jurFlags[jur]} ${jur}</div>
+        <div class="matrix-bar-track">
+          <div class="matrix-bar-fill" style="width:${(count/max)*100}%;background:${jurColors[jur]}"></div>
+        </div>
+        <div class="matrix-count">${count}</div>
+      </div>
+    `).join('');
+}
+
+function renderHeaderStats() {
+  const enacted = policies.filter(p => p.status === 'enacted').length;
+  const proposed = policies.filter(p => p.status === 'proposed' || p.status === 'draft').length;
+  const jurisdictions = new Set(policies.map(p => p.jurisdiction)).size;
+
+  document.getElementById('headerStats').innerHTML = `
+    <div class="hstat"><div class="hstat-num">${policies.length}</div><div class="hstat-lbl">Total Instruments</div></div>
+    <div class="hstat"><div class="hstat-num">${enacted}</div><div class="hstat-lbl">Enacted</div></div>
+    <div class="hstat"><div class="hstat-num">${proposed}</div><div class="hstat-lbl">Proposed / Draft</div></div>
+    <div class="hstat"><div class="hstat-num">${jurisdictions}</div><div class="hstat-lbl">Jurisdictions</div></div>
+  `;
+}
+
+// Init
+renderHeaderStats();
+filterPolicies();
+renderTimeline();
+renderMatrix();
+document.getElementById('countBadge').textContent = `${policies.length} instruments`;
+</script>
+</body>
+</html>
